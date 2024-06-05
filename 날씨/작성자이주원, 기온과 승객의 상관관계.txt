@@ -1,0 +1,71 @@
+작성자:이주원, 기온과 승객의 상관관계
+db.Train.aggregate([
+  {
+    $match: {
+      "WeatherInfo.Temperatures": { $exists: true }
+    }
+  },
+  {
+    $project: {
+      TotalPassengers: { $add: ["$TotalBoardingPassengers"] },
+      temperatureRange: {
+        $switch: {
+          branches: [
+            { case: { $lt: ["$WeatherInfo.Temperatures", 0] }, then: "Very Cold" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.Temperatures", 0] }, { $lt: ["$WeatherInfo.Temperatures", 10] }] }, then: "Cold" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.Temperatures", 10] }, { $lt: ["$WeatherInfo.Temperatures", 20] }] }, then: "Mild" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.Temperatures", 20] }, { $lt: ["$WeatherInfo.Temperatures", 30] }] }, then: "Warm" },
+            { case: { $gte: ["$WeatherInfo.Temperatures", 30] }, then: "Hot" }
+          ],
+          default: "Other"
+        }
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$temperatureRange",
+      totalPassengers: { $sum: "$TotalPassengers" },
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $sort: { "_id": 1 }
+  },
+  {
+    $group: {
+      _id: null,
+      temperatureData: {
+        $push: {
+          temperatureRange: "$_id",
+          avgTotalPassengers: { $divide: ["$totalPassengers", "$count"] },
+          count: "$count"
+        }
+      },
+      totalPassengers: { $sum: "$totalPassengers" },
+      totalCount: { $sum: "$count" }
+    }
+  },
+  {
+    $unwind: "$temperatureData"
+  },
+  {
+    $project: {
+      temperatureRange: "$temperatureData.temperatureRange",
+      avgTotalPassengers: "$temperatureData.avgTotalPassengers",
+      count: "$temperatureData.count",
+      proportion: {
+        $divide: ["$temperatureData.count", "$totalCount"]
+      },
+      percentageOfTotalAvg: {
+        $multiply: [
+          { $divide: ["$temperatureData.avgTotalPassengers", { $divide: ["$totalPassengers", "$totalCount"] }] },
+          100
+        ]
+      }
+    }
+  },
+  {
+    $sort: { temperatureRange: 1 }
+  }
+])

@@ -1,0 +1,70 @@
+작성자:이주원,바람과승객수의상관관계
+db.Train.aggregate([
+  {
+    $match: {
+      "WeatherInfo.windspeed": { $exists: true }
+    }
+  },
+  {
+    $project: {
+      TotalPassengers: { $add: ["$TotalBoardingPassengers", "$TotalAlightingPassengers"] },
+      windSpeedRange: {
+        $switch: {
+          branches: [
+            { case: { $lt: ["$WeatherInfo.windspeed", 1] }, then: "Calm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 1] }, { $lt: ["$WeatherInfo.windspeed", 3] }] }, then: "Light Breeze" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 3] }, { $lt: ["$WeatherInfo.windspeed", 5] }] }, then: "Gentle Breeze" },
+            { case: { $gte: ["$WeatherInfo.windspeed", 5] }, then: "Moderate Breeze" }
+          ],
+          default: "Other"
+        }
+      }
+    }
+  },
+  {
+    $group: {
+      _id: "$windSpeedRange",
+      totalPassengers: { $sum: "$TotalPassengers" },
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $sort: { "_id": 1 }
+  },
+  {
+    $group: {
+      _id: null,
+      windSpeedData: {
+        $push: {
+          windSpeedRange: "$_id",
+          avgTotalPassengers: { $divide: ["$totalPassengers", "$count"] },
+          count: "$count"
+        }
+      },
+      totalPassengers: { $sum: "$totalPassengers" },
+      totalCount: { $sum: "$count" }
+    }
+  },
+  {
+    $unwind: "$windSpeedData"
+  },
+  {
+    $project: {
+      windSpeedRange: "$windSpeedData.windSpeedRange",
+      avgTotalPassengers: "$windSpeedData.avgTotalPassengers",
+      count: "$windSpeedData.count",
+      proportion: {
+        $divide: ["$windSpeedData.count", "$totalCount"]
+      },
+      percentageOfTotalAvg: {
+        $multiply: [
+          { $divide: ["$windSpeedData.avgTotalPassengers", { $divide: ["$totalPassengers", "$totalCount"] }] },
+          100
+        ]
+      }
+    }
+  },
+  {
+    $sort: { windSpeedRange: 1 }
+  }
+])

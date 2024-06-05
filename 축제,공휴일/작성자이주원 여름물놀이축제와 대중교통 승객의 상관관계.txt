@@ -1,0 +1,67 @@
+작성자:이주원 신촌역 여름물놀이축제와 대중교통 승객의 상관관계
+db.Train.aggregate([
+  {
+    $match: {
+      "location.Station": "신촌",
+      "Year Month Day": { $in: [20220723, 20220724, 20220730, 20220731, 20220806, 20220807] }
+    }
+  },
+  {
+    $group: {
+      _id: "$Year Month Day",
+      totalPassengers: { $sum: { $add: ["$TotalBoardingPassengers", "$TotalAlightingPassengers"] } },
+      weatherInfo: { $first: "$WeatherInfo" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      date: "$_id",
+      totalPassengers: 1,
+      weatherInfo: 1,
+      dayOfWeek: {
+        $cond: {
+          if: { $in: ["$_id", [20220723, 20220730, 20220806]] },
+          then: "토요일",
+          else: "일요일"
+        }
+      }
+    }
+  },
+  {
+    $sort: { date: 1 }
+  },
+  {
+    $group: {
+      _id: null,
+      dates: { $push: { date: "$date", dayOfWeek: "$dayOfWeek" } },
+      passengers: { $push: "$totalPassengers" },
+      weatherInfos: { $push: "$weatherInfo" },
+      totalPassengersAllDays: { $sum: "$totalPassengers" }
+    }
+  },
+  {
+    $unwind: {
+      path: "$dates",
+      includeArrayIndex: "index"
+    }
+  },
+  {
+    $project: {
+      date: "$dates.date",
+      dayOfWeek: "$dates.dayOfWeek",
+      totalPassengers: { $arrayElemAt: ["$passengers", "$index"] },
+      weatherInfo: { $arrayElemAt: ["$weatherInfos", "$index"] },
+      percentageOfTotal: {
+        $multiply: [
+          { $divide: [{ $arrayElemAt: ["$passengers", "$index"] }, "$totalPassengersAllDays"] },
+          100
+        ]
+      }
+    }
+  },
+  {
+    $sort: { date: 1 }
+  }
+])
+

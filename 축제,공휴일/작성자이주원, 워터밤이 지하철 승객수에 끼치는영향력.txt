@@ -1,0 +1,75 @@
+작성자:이주원, 워터밤이 지하철 승객수에 끼치는영향력
+db.Train.aggregate([
+  {
+    $match: {
+      "location.Station": "종합운동장",
+      "Year Month Day": { $in: [20220617, 20220618, 20220619, 20220624, 20220625, 20220626, 20220701, 20220702, 20220703] }
+    }
+  },
+  {
+    $group: {
+      _id: "$Year Month Day",
+      totalBoardingPassengers: { $sum: "$TotalBoardingPassengers" },
+      totalAlightingPassengers: { $sum: "$TotalAlightingPassengers" }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      date: "$_id",
+      totalBoardingPassengers: 1,
+      totalAlightingPassengers: 1,
+      totalPassengers: { $sum: ["$totalBoardingPassengers", "$totalAlightingPassengers"] },
+      dayOfWeek: {
+        $switch: {
+          branches: [
+            { case: { $eq: ["$_id", 20220617] }, then: "금요일" },
+            { case: { $eq: ["$_id", 20220618] }, then: "토요일" },
+            { case: { $eq: ["$_id", 20220619] }, then: "일요일" },
+            { case: { $eq: ["$_id", 20220624] }, then: "금요일" },
+            { case: { $eq: ["$_id", 20220625] }, then: "토요일" },
+            { case: { $eq: ["$_id", 20220626] }, then: "일요일" },
+            { case: { $eq: ["$_id", 20220701] }, then: "금요일" },
+            { case: { $eq: ["$_id", 20220702] }, then: "토요일" },
+            { case: { $eq: ["$_id", 20220703] }, then: "일요일" }
+          ],
+          default: "Unknown"
+        }
+      }
+    }
+  },
+  {
+    $sort: { date: 1 }
+  },
+  {
+    $group: {
+      _id: null,
+      dates: { $push: { date: "$date", dayOfWeek: "$dayOfWeek" } },
+      passengers: { $push: "$totalPassengers" },
+      totalPassengersAllDays: { $sum: "$totalPassengers" }
+    }
+  },
+  {
+    $unwind: {
+      path: "$dates",
+      includeArrayIndex: "index"
+    }
+  },
+  {
+    $project: {
+      date: "$dates.date",
+      dayOfWeek: "$dates.dayOfWeek",
+      totalPassengers: { $arrayElemAt: ["$passengers", "$index"] },
+      station: { $literal: "종합운동장" },
+      percentageOfTotal: {
+        $multiply: [
+          { $divide: [{ $arrayElemAt: ["$passengers", "$index"] }, "$totalPassengersAllDays"] },
+          100
+        ]
+      }
+    }
+  },
+  {
+    $sort: { date: 1 }
+  }
+])
