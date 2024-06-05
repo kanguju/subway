@@ -1,0 +1,24 @@
+db.subway_weather.aggregate([
+  {
+    $group: {
+      _id: {
+        line: "$location.Line",
+        month: { $substr: ["$Year Month Day", 0, 6] }
+      },
+      avgBoarding: { $avg: "$TotalBoardingPassengers" },
+      avgAlighting: { $avg: "$TotalAlightingPassengers" }
+    }
+  },
+  {
+    $sort: { avgBoarding: -1 }
+  },
+  {
+    $project: {
+      _id: 0,
+      line: "$_id.line",
+      month: "$_id.month",
+      avgBoarding: 1,
+      avgAlighting: 1
+    }
+  }
+])

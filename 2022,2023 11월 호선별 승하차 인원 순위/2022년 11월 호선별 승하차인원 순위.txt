@@ -1,0 +1,26 @@
+db.subway_weather.aggregate([
+  {
+    $match: {
+      "Year Month Day": { $gte: 20221101, $lte: 20221130 }
+    }
+  },
+  {
+    $group: {
+      _id: "$location.Line",
+      totalBoarding: { $sum: "$TotalBoardingPassengers" },
+      totalAlighting: { $sum: "$TotalAlightingPassengers" },
+      count: { $sum: 1 }
+    }
+  },
+  {
+    $project: {
+      _id: 0,
+      line: "$_id",
+      avgBoarding: { $divide: ["$totalBoarding", "$count"] },
+      avgAlighting: { $divide: ["$totalAlighting", "$count"] }
+    }
+  },
+  {
+    $sort: { avgBoarding: -1 }
+  }
+])
