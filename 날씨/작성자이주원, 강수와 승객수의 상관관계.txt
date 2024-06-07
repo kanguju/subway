@@ -1,4 +1,4 @@
-//작성자:이주원, 강수와 승객수의 상관관계
+// 작성자: 이주원, 강수와 승객수의 상관관계
 db.Train.aggregate([
   {
     $match: {
@@ -8,7 +8,7 @@ db.Train.aggregate([
   },
   {
     $project: {
-      TotalPassengers: { $add: ["$TotalBoardingPassengers", "$TotalAlightingPassengers"] },
+      TotalBoardingPassengers: "$TotalBoardingPassengers",
       precipitationRange: {
         $switch: {
           branches: [
@@ -27,12 +27,8 @@ db.Train.aggregate([
   {
     $group: {
       _id: "$precipitationRange",
-      totalPassengers: { $sum: "$TotalPassengers" },
-      count: { $sum: 1 }
+      totalBoardingPassengers: { $sum: "$TotalBoardingPassengers" }
     }
-  },
-  {
-    $sort: { "_id": 1 }
   },
   {
     $group: {
@@ -40,12 +36,10 @@ db.Train.aggregate([
       precipitationData: {
         $push: {
           precipitationRange: "$_id",
-          avgTotalPassengers: { $divide: ["$totalPassengers", "$count"] },
-          count: "$count"
+          totalBoardingPassengers: "$totalBoardingPassengers"
         }
       },
-      totalPassengers: { $sum: "$totalPassengers" },
-      totalCount: { $sum: "$count" }
+      grandTotalBoardingPassengers: { $sum: "$totalBoardingPassengers" }
     }
   },
   {
@@ -54,14 +48,10 @@ db.Train.aggregate([
   {
     $project: {
       precipitationRange: "$precipitationData.precipitationRange",
-      avgTotalPassengers: "$precipitationData.avgTotalPassengers",
-      count: "$precipitationData.count",
-      proportion: {
-        $divide: ["$precipitationData.count", "$totalCount"]
-      },
+      totalBoardingPassengers: "$precipitationData.totalBoardingPassengers",
       percentageOfTotalAvg: {
         $multiply: [
-          { $divide: ["$precipitationData.avgTotalPassengers", { $divide: ["$totalPassengers", "$totalCount"] }] },
+          { $divide: ["$precipitationData.totalBoardingPassengers", "$grandTotalBoardingPassengers"] },
           100
         ]
       }

@@ -1,4 +1,4 @@
-작성자:이주원, 기온과 승객의 상관관계
+// 작성자: 이주원, 기온과 승객의 상관관계
 db.Train.aggregate([
   {
     $match: {
@@ -8,7 +8,7 @@ db.Train.aggregate([
   },
   {
     $project: {
-      TotalPassengers: { $add: ["$TotalBoardingPassengers"] },
+      TotalBoardingPassengers: 1,
       temperatureRange: {
         $switch: {
           branches: [
@@ -26,12 +26,8 @@ db.Train.aggregate([
   {
     $group: {
       _id: "$temperatureRange",
-      totalPassengers: { $sum: "$TotalPassengers" },
-      count: { $sum: 1 }
+      totalBoardingPassengers: { $sum: "$TotalBoardingPassengers" }
     }
-  },
-  {
-    $sort: { "_id": 1 }
   },
   {
     $group: {
@@ -39,12 +35,10 @@ db.Train.aggregate([
       temperatureData: {
         $push: {
           temperatureRange: "$_id",
-          avgTotalPassengers: { $divide: ["$totalPassengers", "$count"] },
-          count: "$count"
+          totalBoardingPassengers: "$totalBoardingPassengers"
         }
       },
-      totalPassengers: { $sum: "$totalPassengers" },
-      totalCount: { $sum: "$count" }
+      grandTotalBoardingPassengers: { $sum: "$totalBoardingPassengers" }
     }
   },
   {
@@ -52,15 +46,12 @@ db.Train.aggregate([
   },
   {
     $project: {
+      _id: 0,
       temperatureRange: "$temperatureData.temperatureRange",
-      avgTotalPassengers: "$temperatureData.avgTotalPassengers",
-      count: "$temperatureData.count",
-      proportion: {
-        $divide: ["$temperatureData.count", "$totalCount"]
-      },
+      totalBoardingPassengers: "$temperatureData.totalBoardingPassengers",
       percentageOfTotalAvg: {
         $multiply: [
-          { $divide: ["$temperatureData.avgTotalPassengers", { $divide: ["$totalPassengers", "$totalCount"] }] },
+          { $divide: ["$temperatureData.totalBoardingPassengers", "$grandTotalBoardingPassengers"] },
           100
         ]
       }

@@ -1,4 +1,4 @@
-작성자:이주원,바람과승객수의상관관계
+// 작성자: 이주원, 바람과 승객 수의 상관관계
 db.Train.aggregate([
   {
     $match: {
@@ -15,7 +15,7 @@ db.Train.aggregate([
             { case: { $lt: ["$WeatherInfo.windspeed", 1] }, then: "1<" },
             { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 1] }, { $lt: ["$WeatherInfo.windspeed", 3] }] }, then: "1< <3" },
             { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 3] }, { $lt: ["$WeatherInfo.windspeed", 5] }] }, then: "3< <5" },
-            { case: { $gte: ["$WeatherInfo.windspeed", 5] }, then: " 5> " }
+            { case: { $gte: ["$WeatherInfo.windspeed", 5] }, then: "5>" }
           ],
           default: "Other"
         }
@@ -25,12 +25,8 @@ db.Train.aggregate([
   {
     $group: {
       _id: "$windSpeedRange",
-      totalPassengers: { $sum: "$TotalPassengers" },
-      count: { $sum: 1 }
+      totalPassengers: { $sum: "$TotalPassengers" }
     }
-  },
-  {
-    $sort: { "_id": 1 }
   },
   {
     $group: {
@@ -38,12 +34,10 @@ db.Train.aggregate([
       windSpeedData: {
         $push: {
           windSpeedRange: "$_id",
-          avgTotalPassengers: { $divide: ["$totalPassengers", "$count"] },
-          count: "$count"
+          totalPassengers: "$totalPassengers"
         }
       },
-      totalPassengers: { $sum: "$totalPassengers" },
-      totalCount: { $sum: "$count" }
+      grandTotalPassengers: { $sum: "$totalPassengers" }
     }
   },
   {
@@ -52,14 +46,10 @@ db.Train.aggregate([
   {
     $project: {
       windSpeedRange: "$windSpeedData.windSpeedRange",
-      avgTotalPassengers: "$windSpeedData.avgTotalPassengers",
-      count: "$windSpeedData.count",
-      proportion: {
-        $divide: ["$windSpeedData.count", "$totalCount"]
-      },
+      totalPassengers: "$windSpeedData.totalPassengers",
       percentageOfTotalAvg: {
         $multiply: [
-          { $divide: ["$windSpeedData.avgTotalPassengers", { $divide: ["$totalPassengers", "$totalCount"] }] },
+          { $divide: ["$windSpeedData.totalPassengers", "$grandTotalPassengers"] },
           100
         ]
       }
