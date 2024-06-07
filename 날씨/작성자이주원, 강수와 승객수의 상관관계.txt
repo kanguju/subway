@@ -12,14 +12,11 @@ db.Train.aggregate([
       precipitationRange: {
         $switch: {
           branches: [
-            { case: { $lt: ["$WeatherInfo.precipitation", 1] }, then: "0-1 mm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 1] }, { $lt: ["$WeatherInfo.precipitation", 2] }] }, then: "1-2 mm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 2] }, { $lt: ["$WeatherInfo.precipitation", 3] }] }, then: "2-3 mm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 3] }, { $lt: ["$WeatherInfo.precipitation", 4] }] }, then: "3-4 mm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 4] }, { $lt: ["$WeatherInfo.precipitation", 5] }] }, then: "4-5 mm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 5] }, { $lt: ["$WeatherInfo.precipitation", 6] }] }, then: "5-6 mm" }
+            { case: { $lt: ["$WeatherInfo.precipitation", 2] }, then: "비가 안내림" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 2] }, { $lt: ["$WeatherInfo.precipitation", 4] }] }, then: "비가 약하게 내림" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 4] }, { $lt: ["$WeatherInfo.precipitation", 6] }] }, then: "비가 보통으로 내림" }
           ],
-          default: "Other"
+          default: "비가 꾀 많이내림"
         }
       }
     }
