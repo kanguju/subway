@@ -1,8 +1,9 @@
-작성자:이주원, 강수와 승객수의 상관관계
-db.Train.aggregate(
+//작성자:이주원, 강수와 승객수의 상관관계
+db.Train.aggregate([
   {
     $match: {
-      "WeatherInfo.precipitation": { $exists: true }
+      "WeatherInfo.precipitation": { $exists: true },
+      "location.Station": { $in: ["경복궁", "안국", "광화문", "종로3가"] }
     }
   },
   {
@@ -11,9 +12,12 @@ db.Train.aggregate(
       precipitationRange: {
         $switch: {
           branches: [
-            { case: { $lt: ["$WeatherInfo.precipitation", 0.1] }, then: "No or Light Rain" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 0.1] }, { $lt: ["$WeatherInfo.precipitation", 1] }] }, then: "Moderate Rain" },
-            { case: { $gte: ["$WeatherInfo.precipitation", 1] }, then: "Heavy Rain" }
+            { case: { $lt: ["$WeatherInfo.precipitation", 1] }, then: "0-1 mm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 1] }, { $lt: ["$WeatherInfo.precipitation", 2] }] }, then: "1-2 mm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 2] }, { $lt: ["$WeatherInfo.precipitation", 3] }] }, then: "2-3 mm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 3] }, { $lt: ["$WeatherInfo.precipitation", 4] }] }, then: "3-4 mm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 4] }, { $lt: ["$WeatherInfo.precipitation", 5] }] }, then: "4-5 mm" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.precipitation", 5] }, { $lt: ["$WeatherInfo.precipitation", 6] }] }, then: "5-6 mm" }
           ],
           default: "Other"
         }

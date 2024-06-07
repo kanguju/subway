@@ -2,7 +2,8 @@
 db.Train.aggregate([
   {
     $match: {
-      "WeatherInfo.windspeed": { $exists: true }
+      "WeatherInfo.windspeed": { $exists: true },
+      "location.Station": { $in: ["경복궁", "안국", "광화문", "종로3가"] }
     }
   },
   {
@@ -11,10 +12,10 @@ db.Train.aggregate([
       windSpeedRange: {
         $switch: {
           branches: [
-            { case: { $lt: ["$WeatherInfo.windspeed", 1] }, then: "Calm" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 1] }, { $lt: ["$WeatherInfo.windspeed", 3] }] }, then: "Light Breeze" },
-            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 3] }, { $lt: ["$WeatherInfo.windspeed", 5] }] }, then: "Gentle Breeze" },
-            { case: { $gte: ["$WeatherInfo.windspeed", 5] }, then: "Moderate Breeze" }
+            { case: { $lt: ["$WeatherInfo.windspeed", 1] }, then: "1<" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 1] }, { $lt: ["$WeatherInfo.windspeed", 3] }] }, then: "1< <3" },
+            { case: { $and: [{ $gte: ["$WeatherInfo.windspeed", 3] }, { $lt: ["$WeatherInfo.windspeed", 5] }] }, then: "3< <5" },
+            { case: { $gte: ["$WeatherInfo.windspeed", 5] }, then: " 5> " }
           ],
           default: "Other"
         }

@@ -2,7 +2,8 @@
 db.Train.aggregate([
   {
     $match: {
-      "WeatherInfo.Temperatures": { $exists: true }
+      "WeatherInfo.Temperatures": { $exists: true },
+      "location.Station": "종로3가"
     }
   },
   {
